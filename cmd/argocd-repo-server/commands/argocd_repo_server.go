@@ -103,6 +103,7 @@ func NewCommand() *cobra.Command {
 
 			cli.SetLogFormat(cmdutil.LogFormat)
 			cli.SetLogLevel(cmdutil.LogLevel)
+			cli.SetLogOutput()
 
 			if !disableTLS {
 				var err error

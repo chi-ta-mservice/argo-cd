@@ -93,6 +93,7 @@ func NewCommand() *cobra.Command {
 
 			cli.SetLogFormat(cmdutil.LogFormat)
 			cli.SetLogLevel(cmdutil.LogLevel)
+			cli.SetLogOutput()
 			cli.SetGLogLevel(glogLevel)
 
 			config, err := clientConfig.ClientConfig()

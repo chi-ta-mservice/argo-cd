@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -30,7 +31,41 @@ import (
 	"github.com/argoproj/argo-cd/v2/util/io"
 	utillog "github.com/argoproj/argo-cd/v2/util/log"
 )
+type LogWriter struct{}
 
+var levelRegex *regexp.Regexp
+
+const (
+	LevelError   = "error"
+	LevelWarning = "warning"
+	LevelFatal   = "fatal"
+	LevelPanic   = "panic"
+)
+
+func init() {
+	var err error
+	levelRegex, err = regexp.Compile("level=([a-z]+)")
+	if err != nil {
+		log.WithError(err).Fatal("Cannot setup log level")
+	}
+}
+
+func (w *LogWriter) detectLogLevel(p []byte) (level string) {
+	matches := levelRegex.FindStringSubmatch(string(p))
+	if len(matches) > 1 {
+		level = matches[1]
+	}
+	return
+}
+
+func (w *LogWriter) Write(p []byte) (n int, err error) {
+	level := w.detectLogLevel(p)
+
+	if level == LevelError || level == LevelWarning || level == LevelFatal || level == LevelPanic {
+		return os.Stderr.Write(p)
+	}
+	return os.Stdout.Write(p)
+}
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
 func NewVersionCmd(cliName string) *cobra.Command {
 	var short bool
@@ -188,6 +223,11 @@ func SetLogLevel(logLevel string) {
 	errors.CheckError(err)
 	os.Setenv(common.EnvLogLevel, level.String())
 	log.SetLevel(level)
+}
+
+// SetLogOutput sets log output to different streams
+func SetLogOutput() {
+	log.SetOutput(&LogWriter{})
 }
 
 // SetGLogLevel set the glog level for the k8s go-client
